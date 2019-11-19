@@ -1,6 +1,9 @@
 package com.model2.mvc.service.domain;
 
 import java.sql.Date;
+import java.util.List;
+
+import org.springframework.web.multipart.MultipartFile;
 
 //상품정보를 모델링한 Bean
 public class Product {
@@ -10,6 +13,9 @@ public class Product {
 	private String prodDetail;
 	private String manuDate;
 	private int price;
+	//private String fileName;
+	//private MultipartFile file;
+	private List<MultipartFile> files;
 	private String fileName;
 	private Date regDate;
 	private String proTranCode;
@@ -18,12 +24,41 @@ public class Product {
 	public Product(){
 	}
 	
+	
+	
+	public List<MultipartFile> getFiles() {
+		return files;
+	}
+
+
+
+	public void setFiles(List<MultipartFile> files) {
+		this.files = files;
+	}
+
+
+
 	public String getProTranCode() {
 		return proTranCode;
 	}
 	public void setProTranCode(String proTranCode) {
 		this.proTranCode = proTranCode;
 	}
+	
+	
+	/*
+	public MultipartFile getFile() {
+		return file;
+	}
+
+
+
+	public void setFile(MultipartFile file) {
+		this.file = file;
+	}
+
+*/
+
 	public String getFileName() {
 		return fileName;
 	}

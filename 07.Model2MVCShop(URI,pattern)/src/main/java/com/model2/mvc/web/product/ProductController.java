@@ -2,6 +2,8 @@ package com.model2.mvc.web.product;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
@@ -20,6 +22,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import com.model2.mvc.common.Page;
 import com.model2.mvc.common.Search;
@@ -59,79 +63,50 @@ public class ProductController {
 	
 	//@RequestMapping("/addProduct")
 	@RequestMapping(value="addProduct", method=RequestMethod.POST)
-	public String addProduct(@ModelAttribute("product") Product product, Model model, HttpServletRequest request) throws Exception{
-		
+	public String addProduct(@ModelAttribute("product") Product product, Model model) throws Exception{
+		//첨부파일은 Product에서 처리하지 않으므로 HttpServletRequest를 추가로 받음
 		System.out.println("/product/addProduct    :   POST");
+		String filesName ="";
 		
-		if(FileUpload.isMultipartContent(request)){
-			String temDir = "C:\\workspace\\07.Model2MVCShop(URI,pattern)\\WebContent\\images\\uploadFiles\\";
+		if(product.getManuDate()!=null) {
+			product.setManuDate(product.getManuDate().replaceAll("-", ""));		
+		}
 		
-			DiskFileUpload fileUpload = new DiskFileUpload();
-			fileUpload.setRepositoryPath(temDir);
-			fileUpload.setSizeMax(1024*1024*10);
-			fileUpload.setSizeThreshold(1024*100); //한번에 100k까지는 메모리에 저장
-
-			if(request.getContentLength() < fileUpload.getSizeMax()) {
-				
-				StringTokenizer token = null;
-				
-				//parseRequest()는 FileItem을 포함하고 있는 List타입 리턴
-				List fileItemList = fileUpload.parseRequest(request);
-				int size = fileItemList.size();
-				for(int i=0; i<size; i++) {
-					FileItem fileItem = (FileItem)fileItemList.get(i);
-						if(fileItem.isFormField()) {
-							if(fileItem.getFieldName().equals("manuDate")) {
-								
-							token = new StringTokenizer(fileItem.getString("euc-kr"),"-");
-							String manuDate = token.nextToken() + token.nextToken() + token.nextToken();
-							product.setManuDate(manuDate);
-							}
-							else if(fileItem.getFieldName().equals("prodName"))
-								product.setProdName(fileItem.getString("euc-kr"));
-							else if(fileItem.getFieldName().equals("prodDetail"))
-								product.setProdDetail(fileItem.getString("euc-kr"));
-							else if(fileItem.getFieldName().equals("price"))
-								product.setPrice(Integer.parseInt(fileItem.getString("euc-kr")));
-						
-						}else {  //파일 형식ㅇㅣ면!
-							
-							if(fileItem.getSize() > 0) {
-								int idx = fileItem.getName().lastIndexOf("\\");
-
-								if(idx==-1) {
-									idx = fileItem.getName().lastIndexOf("/");
-								}
-								String fileName = fileItem.getName().substring(idx+1);
-								product.setFileName(fileName);
-								try {
-									File uploadedFile = new File(temDir, fileName);
-									fileItem.write(uploadedFile);								
-								}catch(IOException e) {
-									System.out.println(e);
-								}
-							}else {
-								product.setFileName("../../images/emptu.GIF");
-							}	
-						}//else
-				}//for
-				
-				
-				productService.addProduct(product);
-				model.addAttribute("product",product);
+		List<MultipartFile> fileList = product.getFiles();
+		List<String> fn = new ArrayList();
 		
-				
-				}else { //업로드하는 파일이 setSizeMax보다 큰 경우
-					int overSize = (request.getContentLength()/1000000);
-					System.out.println("<script>alert('파일의 크기는 1MB까지 입니다. 올리신 파일 용량은 " + overSize +"MB입니다');");
-					System.out.println("history.back();</script>");
-				}
+					
+		for (int i = 0; i < fileList.size(); i++) {
 			
-		} else {
-			System.out.println("인코딩 타입이 multipart/form-data가 아닙니다..");
+			filesName += fileList.get(i).getOriginalFilename()+",";
+			fn.add(fileList.get(i).getOriginalFilename());
+		}
+		System.out.println(fileList);
+		String filePath = "C:\\Users\\user\\git\\repository\\07.Model2MVCShop(URI,pattern)\\07.Model2MVCShop(URI,pattern)\\WebContent\\images\\uploadFiles";
+		
+		for (int i = 0; i < fileList.size(); i++) {
+			String fileName = fn.get(i);
+			fileList.get(i).transferTo(new File(filePath, fileName));
 		}
 		
 		
+		product.setFileName(filesName);
+
+		productService.addProduct(product);
+		model.addAttribute("product", product);
+		
+		
+		//MultipartFile file = product.getFile();
+		//String fileName = file.getOriginalFilename();
+		//String filePath = "C:\\Users\\user\\git\\repository\\07.Model2MVCShop(URI,pattern)\\07.Model2MVCShop(URI,pattern)\\WebContent\\images\\uploadFiles";
+		//file.transferTo(new File(filePath, fileName));
+		
+		
+		//product.setFileName(fileName);
+		//productService.addProduct(product);
+		//model.addAttribute("product",product);
+		
+				
 		
 		return "forward:/product/addProduct.jsp";
 	} 
@@ -145,6 +120,13 @@ public class ProductController {
 		System.out.println("/product/getProduct   :   GET");
 	
 		product = productService.getProduct(product.getProdNo());
+		String[] fileNameArr = product.getFileName().split(",");
+	
+		for(String a : fileNameArr) {
+			System.out.println(a);
+		}
+		
+		model.addAttribute("fileNameArr",fileNameArr);
 		model.addAttribute("product", product);
 		
 		return "forward:/product/readProduct.jsp";
